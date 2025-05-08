@@ -18,7 +18,7 @@ library(readxl)
 setwd('/Users/laxmib/Downloads/')
 
 # Get MR datafile for maternal-offspring duos analysis
-datafile <- read_excel("Supplementary_table_vs1.xlsx", sheet = "mat_off_duos - MR datafile")
+datafile <- read_excel("Supplementary table S1.xlsx", sheet = "mat_off_duos - MR datafile")
 datafile <- as.data.frame(datafile, fix.empty.names=FALSE)
 
 exposures <- c("fg", "t2d", "gd")
