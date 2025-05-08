@@ -1,0 +1,87 @@
+# Author: Laxmi Bhatta, PhD
+# Affiliation: Department of Public Health and Nursing, NTNU Norwegian University of Science and Technology, Norway
+# Email: laxmi.bhatta@ntnu.no  laxx.mee@gmail.com
+# Date: 09/05/2025
+
+# 2-Sample Intergenerational MR analysis
+library(data.table)
+library(devtools)
+library(TwoSampleMR) # devtools::install_github("MRCIEU/TwoSampleMR")
+library(MRInstruments) # devtools::install_github("MRCIEU/MRInstruments")
+library(ieugwasr)
+library(MendelianRandomization)
+library(MRPRESSO)
+library(ggplot2)
+library(dplyr)
+library(readxl)
+
+setwd('/Users/laxmib/Downloads/')
+
+# Get MR datafile for maternal-offspring duos analysis
+datafile <- read_excel("Supplementary_table_vs1.xlsx", sheet = "mat_off_duos - MR datafile")
+datafile <- as.data.frame(datafile, fix.empty.names=FALSE)
+
+exposures <- c("fg", "t2d", "gd")
+outcomes <- c("bmi","chol","dbp","glu","hba1c","hdl","ldl",
+             "lnbmi","lncrp","lnglu","lnhba1c","lnhdl","lntg","lnwhr",
+             "sbp","tg","whr","zbw") # "ln" represents the log-transformed phenotype
+sub_samples <- c("maternal","offspring")
+methods <- c("unadjusted","adjusted")
+models <- c("duos")
+
+for (i in 1:3) {
+  for (j in 1:18) {
+    for (k in 1:2) {
+      for (l in 1:2) {
+        
+        print(paste0(exposures[i]))
+        print(paste0(outcomes[j]))
+        print(paste0(sub_samples[k]))
+        print(paste0(methods[l]))
+        
+        exp <- paste0(exposures[i])
+        out <- paste0(outcomes[j])
+        sub_samp <- paste0(sub_samples[k])
+        meth <- paste0(methods[l])
+        mod <- paste0(models[1])
+        
+        dat <- datafile %>% filter(exposure == paste0(exp) & 
+                                     outcome == paste0(out) & 
+                                     sub_sample == paste0(sub_samp) & 
+                                     method == paste0(meth))
+        # F-statistics
+        dat$F <- (dat$beta.exposure*dat$beta.exposure)/(dat$se.exposure*dat$se.exposure)
+        Fmean <- mean(dat$F, na.rm=T)
+        Fmin <- min(dat$F, na.rm=T)
+        Fmax <- max(dat$F, na.rm=T)
+        Fmedian <- median(dat$F, na.rm=T)
+        Fsd <- sd(dat$F, na.rm=T)
+        f <- data.frame("F-statistics_mean"=Fmean, "F-median"=Fmedian, "F-min"=Fmin, "F-max"=Fmax, "F-sd"=Fsd)
+        write.table(f, paste0(exp,"_",out,"_",sub_samp,"_",meth,"_",mod,"_","Fstat_I2.txt"), sep = "\t", quote=F, col.names = TRUE, row.names = FALSE)
+        
+        # Perform MR
+        res <- mr(dat, method_list=c("mr_ivw", "mr_egger_regression",  "mr_weighted_median", "mr_weighted_mode"))
+        write.table(res, paste0(exp,"_",out,"_",sub_samp,"_",meth,"_",mod,"_","MR_methods.txt"), sep = "\t", quote=F, col.names = TRUE, row.names = FALSE)
+        
+        # Perform MR-PRESSO global method
+        res_presso <- run_mr_presso(dat, NbDistribution = 1000, SignifThreshold = 0.05)
+        # MR-PRESSO global test
+        global <- res_presso[[1]]$`MR-PRESSO results`$`Global Test`$Pvalue
+        X <- data.frame(exp=phe[h],
+                        out=paste0(outcomesGWAS[i]),
+                        global_test_p=global)
+        write.table(X, paste0(exp,"_",out,"_",sub_samp,"_",meth,"_",mod,"_","MRPRESSO_global_test.txt"), sep = "\t", quote=F, col.names = TRUE, row.names = FALSE)
+
+        # Heterogeneity statistics
+        res_heterogeneity <- mr_heterogeneity(dat, method_list=c("mr_ivw"))
+        write.table(res_heterogeneity, paste0(exp,"_",out,"_",sub_samp,"_",meth,"_",mod,"_","heterogeneity.txt"), sep = "\t", quote=F, col.names = TRUE, row.names = FALSE)
+        
+        # Horizontal pleiotropy
+        res_pleiotropy <- mr_pleiotropy_test(dat)
+        write.table(res_pleiotropy, paste0(exp,"_",out,"_",sub_samp,"_",meth,"_",mod,"_","pleiotropy.txt"), sep = "\t", quote=F, col.names = TRUE, row.names = FALSE)
+        
+      }
+    }
+  }
+}
+
