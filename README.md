@@ -1,1 +1,1 @@
-# Intergenerational_MR_analysis
+# Two-sample intergenerational MR analysis
