@@ -30,7 +30,7 @@ The datafile includes two methods:
 unadjusted summary data,
 adjusted summary data
 
-The MR estimates could be converted to the standard deviation (SD) scale using the "weighted mean SD" provided in the Supplementary table S1 (in manuscript)
-An example:
-SD scale for BMI = MR estimate/4.650540
+The MR estimates could be converted to the standard deviation (SD) scale using the "weighted mean SD" of corresponding outcome provided in the Supplementary table S1 (in manuscript)
+An example for BMI:
+SD scale for BMI = MR estimate for BMI/4.650540
 
